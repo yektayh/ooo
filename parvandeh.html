@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>پرونده شرکت‌ها</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+  <style>
+    body {
+      direction: rtl;
+      font-family: sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .select-box {
+      margin: 20px auto;
+      max-width: 400px;
+      background: white;
+      box-shadow: inset 0 -2px 6px rgba(0,0,0,0.15), 0 4px 10px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .select2-container {
+      width: 100% !important;
+    }
+
+    .records {
+      margin-top: 30px;
+    }
+
+    .record-card {
+      background: white;
+      padding: 15px 20px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .record-card strong {
+      color: #444;
+    }
+
+    .bottom-menu {
+      position: fixed;
+      bottom: 30px;
+      right: 50%;
+      transform: translateX(50%);
+      background: linear-gradient(to top, #ffffff, #f0f0f0);
+      border-radius: 999px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      display: flex;
+      gap: 15px;
+      padding: 15px 25px;
+      z-index: 999;
+      border: 1px solid #ddd;
+    }
+
+    .menu-btn {
+      background: linear-gradient(to top, #444, #000);
+      color: white;
+      border: none;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      font-size: 20px;
+      box-shadow: inset 0 -3px 6px rgba(0,0,0,0.4), 0 3px 6px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .menu-btn span {
+      font-size: 10px;
+      margin-top: 2px;
+    }
+
+    .menu-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: inset 0 -1px 3px rgba(0,0,0,0.3), 0 6px 12px rgba(0,0,0,0.25);
+      background: linear-gradient(to top, #333, #111);
+    }
+
+    .menu-btn.active {
+      background: linear-gradient(to top, #e91e63, #b0003a);
+      box-shadow: inset 0 -3px 6px rgba(255,255,255,0.4), 0 3px 8px rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body>
+
+<h2>پرونده شرکت‌ها</h2>
+
+<div class="select-box">
+  <select multiple id="companySelect">
+    <option disabled>در حال بارگذاری...</option>
+  </select>
+</div>
+
+<div class="records" id="recordContainer"></div>
+
+<!-- منوی پایین -->
+<div class="bottom-menu">
+  <button class="menu-btn" onclick="location.href='d.html'">📋<br><span>کارها</span></button>
+  <button class="menu-btn active" onclick="setActiveMenu(this)">📁<br><span>پرونده‌ها</span></button>
+  <button class="menu-btn" onclick="location.href='new.html'">➕<br><span>جدید</span></button>
+  <button class="menu-btn" onclick="setActiveMenu(this)">✏️<br><span>ویرایش</span></button>
+  <button class="menu-btn" onclick="setActiveMenu(this)">📊<br><span>گزارش</span></button>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+  const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzwZnPttfChtj6C9yv_K9Rw02i0HgibJNoxLrMbowDtRVKwk_iOVK4aXaOQybx_ucWV/exec";
+  const companySelect = document.getElementById("companySelect");
+  const recordContainer = document.getElementById("recordContainer");
+  let sheetData = [];
+
+  function setActiveMenu(btn) {
+    document.querySelectorAll(".menu-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  }
+
+  async function fetchData() {
+    const res = await fetch(SHEET_API_URL);
+    const data = await res.json();
+    sheetData = data;
+
+    const companies = [...new Set(data.map(row => row["نام شرکت"]))];
+    $("#companySelect").html(companies.map(c => `<option value="${c}">${c}</option>`));
+
+    $('#companySelect').select2({
+      placeholder: "نام شرکت را انتخاب کنید",
+      dir: "rtl"
+    });
+  }
+
+  $('#companySelect').on('change', () => {
+    const selected = $('#companySelect').val();
+    const filtered = sheetData.filter(row => selected.includes(row["نام شرکت"]));
+    renderCards(filtered);
+  });
+
+  function letterToIndex(letter) {
+    let col = 0;
+    for (let i = 0; i < letter.length; i++) {
+      col *= 26;
+      col += letter.charCodeAt(i) - 64;
+    }
+    return col - 1;
+  }
+
+  function renderCards(rows) {
+    recordContainer.innerHTML = "";
+
+    rows.forEach(item => {
+      const keys = Object.keys(item);
+      const stageLetter = item["ستون مرحله"];
+      const endIndex = stageLetter ? letterToIndex(stageLetter) : keys.length - 1;
+
+      const div = document.createElement("div");
+      div.className = "record-card";
+
+      let content = "";
+
+      keys.forEach((k, idx) => {
+        if (idx <= endIndex || k === "مرحله فعلی" || k === "تاریخ آخرین اقدام") {
+          content += `<strong>${k}:</strong> ${item[k] || "-"}<br>`;
+        }
+      });
+
+      div.innerHTML = content;
+      recordContainer.appendChild(div);
+    });
+  }
+
+  fetchData();
+</script>
+
+</body>
+</html>
