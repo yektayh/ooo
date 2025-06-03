@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>داشبورد مالیاتی</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      direction: rtl;
+      font-family: sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 10px;
+      min-height: 100vh;
+    }
+body,html{
+  overflow-y: auto;
+}
+.page{
+  height: 130px;
+}
+    .calendar {
+      display: flex;
+      justify-content: space-between;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+      gap: 8px;
+      height: clamp(130px, 18vw, 200px);
+      padding: 0 10px;
+      align-items: center;
+    }
+
+    .day {
+      flex: 1 1 0;
+      min-width: 0;
+      background: white;
+      border-radius: 999px;
+      height: 70%;
+      border: 1px solid #ccc;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .day:hover {
+      background: #ddd;
+    }
+
+    .day.selected {
+      background: black;
+      color: white;
+    }
+
+    .day-number {
+      font-size: clamp(12px, 2vw, 15px);
+      margin-top: 5px;
+      font-weight: bold;
+    }
+
+    .day-name {
+      font-size: clamp(10px, 2vw, 13px);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .day-marker-top {
+      width: 10px;
+      height: 10px;
+      background: red;
+      border-radius: 50%;
+      margin-bottom: 6px;
+      position: relative;
+      top: -6px;
+    }
+
+    .tasks {
+      margin-top: 30px;
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+
+    .task-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .task-info {
+      flex: 1;
+    }
+
+    ul {
+      list-style: none;
+      padding-right: 0;
+      margin: 0;
+    }
+
+    .edit-btn {
+      background-color: black;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 13px;
+      align-self: flex-end;
+      margin-bottom: 50px;
+    }
+
+    .edit-btn:hover {
+      background-color: #2b2b2b;
+    }
+
+    .bottom-menu {
+      position: fixed;
+      bottom: 30px;
+      right: 50%;
+      transform: translateX(50%);
+      background: linear-gradient(to top, #ffffff, #f0f0f0);
+      border-radius: 999px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      display: flex;
+      gap: 15px;
+      padding: 15px 25px;
+      z-index: 999;
+      border: 1px solid #ddd;
+      
+    }
+
+    .menu-btn {
+      background: linear-gradient(to top, #444, #000);
+      color: white;
+      border: none;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      font-size: 20px;
+      box-shadow: inset 0 -3px 6px rgba(0,0,0,0.4), 0 3px 6px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .menu-btn span {
+      font-size: 10px;
+      margin-top: 2px;
+    }
+
+    .menu-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: inset 0 -1px 3px rgba(0,0,0,0.3), 0 6px 12px rgba(0,0,0,0.25);
+      background: linear-gradient(to top, #333, #111);
+    }
+
+    .menu-btn.active {
+      background: linear-gradient(to top, #e91e63, #b0003a);
+      box-shadow: inset 0 -3px 6px rgba(255,255,255,0.4), 0 3px 8px rgba(0,0,0,0.4);
+    }
+
+    @media screen and (max-width: 500px) {
+      .day-name {
+        font-size: 12px;
+      }
+      .day-number {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h2 style="text-align: center;">داشبورد مالیاتی</h2>
+
+<div class="calendar" id="calendar"></div>
+
+<div class="tasks" id="tasks">
+  <h3>اقدامات</h3>
+  <ul id="taskList"></ul>
+</div>
+
+<div class="tasks" id="uncertainTasks" style="margin-top: 30px;">
+  <h3>اقدامات با وضعیت نامشخص</h3>
+  <ul id="uncertainList"></ul>
+</div>
+
+<!-- منوی پایین -->
+<div class="bottom-menu">
+  <button class="menu-btn active" onclick="location.href='d.html'">📋<br><span>کارها</span></button>
+  <button class="menu-btn" onclick="location.href='parvandeh.html'">📁<br><span>پرونده‌ها</span></button>
+  <button class="menu-btn" onclick="location.href='new.html'">➕<br><span>جدید</span></button>
+  <button class="menu-btn" onclick="setActiveMenu(this)">✏️<br><span>ویرایش</span></button>
+  <button class="menu-btn" onclick="setActiveMenu(this)">📊<br><span>گزارش</span></button>
+</div>
+<div class="page"></div>
+<script>
+  const weekdays = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
+  const calendar = document.getElementById("calendar");
+  const taskList = document.getElementById("taskList");
+  const uncertainList = document.getElementById("uncertainList");
+  const today = new Date();
+  const todayPersianDate = formatPersianDate(today);
+  let selectedDay = null;
+  let sheetData = [];
+
+  const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzwZnPttfChtj6C9yv_K9Rw02i0HgibJNoxLrMbowDtRVKwk_iOVK4aXaOQybx_ucWV/exec";
+
+  async function fetchSheetData() {
+    const res = await fetch(SHEET_API_URL);
+    const data = await res.json();
+    sheetData = data;
+    buildCalendar();
+    loadTasksFor(todayPersianDate);
+    loadUncertainTasks();
+  }
+
+  function formatPersianDate(date) {
+    const formatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
+    const persianDate = formatter.format(date);
+    return persianDate.replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+  }
+
+  function normalizeDate(str) {
+    return (str + "").trim().replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+  }
+
+  function loadTasksFor(dateStr) {
+    taskList.innerHTML = "";
+    const filtered = sheetData.filter(item =>
+      normalizeDate(item["تاریخ آخرین اقدام"]) === normalizeDate(dateStr)
+    );
+
+    if (!filtered.length) {
+      taskList.innerHTML = "<li>موردی برای این روز یافت نشد</li>";
+      return;
+    }
+
+    filtered.forEach(item => {
+      const isToday = normalizeDate(item["تاریخ آخرین اقدام"]) === normalizeDate(todayPersianDate);
+
+      const li = document.createElement("li");
+      li.className = "task-item";
+      li.innerHTML = `
+        <div class="task-info">
+          <strong>شرکت:</strong> ${item["نام شرکت"] || "-"}<br>
+          <strong>مرحله فعلی:</strong> ${item["مرحله فعلی"] || "-"}<br>
+          <strong>تاریخ آخرین اقدام:</strong> ${item["تاریخ آخرین اقدام"] || "-"}
+        </div>
+        ${isToday ? `<button class="edit-btn" onclick="alert('ویرایش برای ${item["نام شرکت"]}')">ویرایش وضعیت</button>` : ""}
+      `;
+      taskList.appendChild(li);
+    });
+  }
+
+  function loadUncertainTasks() {
+    uncertainList.innerHTML = "";
+
+    const todayValue = parseInt(normalizeDate(todayPersianDate.replace(/\//g, '')));
+
+    const uncertain = sheetData.filter(item => {
+      const itemDateStr = normalizeDate(item["تاریخ آخرین اقدام"]);
+      const itemValue = parseInt(itemDateStr.replace(/\//g, ''));
+      return itemValue < todayValue;
+    });
+
+    if (!uncertain.length) {
+      uncertainList.innerHTML = "<li>مورد نامشخصی یافت نشد</li>";
+      return;
+    }
+
+    uncertain.forEach(item => {
+      const li = document.createElement("li");
+      li.className = "task-item";
+      li.innerHTML = `
+        <div class="task-info">
+          <strong>شرکت:</strong> ${item["نام شرکت"] || "-"}<br>
+          <strong>مرحله فعلی:</strong> ${item["مرحله فعلی"] || "-"}<br>
+          <strong>تاریخ آخرین اقدام:</strong> ${item["تاریخ آخرین اقدام"] || "-"}
+        </div>
+        <button class="edit-btn" onclick="alert('ویرایش برای ${item["نام شرکت"]}')">ویرایش وضعیت</button>
+      `;
+      uncertainList.appendChild(li);
+    });
+  }
+
+  function buildCalendar() {
+    calendar.innerHTML = "";
+    weekdays.forEach((dayName, index) => {
+      const div = document.createElement("div");
+      div.className = "day";
+      div.dataset.index = index;
+
+      const todayIndex = (today.getDay() + 1) % 7;
+      const diff = index - todayIndex;
+      const thisDate = new Date(today);
+      thisDate.setDate(today.getDate() + diff);
+
+      const persianDay = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+        day: "numeric"
+      }).format(thisDate);
+      const fullDate = formatPersianDate(thisDate);
+
+      const hasTask = sheetData.some(item =>
+        normalizeDate(item["تاریخ آخرین اقدام"]) === normalizeDate(fullDate)
+      );
+
+      div.innerHTML = `
+        ${hasTask ? '<div class="day-marker-top"></div>' : ''}
+        <div class="day-name">${dayName}</div>
+        <div class="day-number">${persianDay}</div>
+      `;
+
+      if (thisDate.toDateString() === today.toDateString()) {
+        div.classList.add("selected");
+        selectedDay = div;
+      }
+
+      div.onclick = () => {
+        if (selectedDay) selectedDay.classList.remove("selected");
+        div.classList.add("selected");
+        selectedDay = div;
+        loadTasksFor(fullDate);
+      };
+
+      calendar.appendChild(div);
+    });
+  }
+
+  function setActiveMenu(button) {
+    document.querySelectorAll(".menu-btn").forEach(btn => btn.classList.remove("active"));
+    button.classList.add("active");
+  }
+
+  fetchSheetData();
+</script>
+
+</body>
+</html>
